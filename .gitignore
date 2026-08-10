@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.js.map
+.env
+cache/
+opencode.jsonc
+AGENTS.md

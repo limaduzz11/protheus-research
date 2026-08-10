@@ -1,0 +1,24 @@
+{
+  "name": "protheus-research",
+  "version": "1.0.0",
+  "description": "MCP server for advanced TOTVS Protheus technical research",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": ["mcp", "protheus", "totvs", "advpl", "tlpp"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "undici": "^7.6.0",
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.14.0"
+  }
+}
