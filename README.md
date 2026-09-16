@@ -234,7 +234,19 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
   "mcpServers": {
     "protheus-research": {
       "command": "node",
-      "args": ["/home/limaduzz/protheus-research/dist/index.js"]
+      "args": ["/path/to/protheus-research/dist/index.js"]
+    }
+  }
+}
+```
+
+Or run directly with npx / global install:
+```json
+{
+  "mcpServers": {
+    "protheus-research": {
+      "command": "npx",
+      "args": ["-y", "protheus-research"]
     }
   }
 }
@@ -249,7 +261,7 @@ Add to your project's `opencode.jsonc` or global configuration:
     "servers": {
       "protheus-research": {
         "command": "node",
-        "args": ["/home/limaduzz/protheus-research/dist/index.js"],
+        "args": ["/path/to/protheus-research/dist/index.js"],
         "enabled": true
       }
     }
@@ -265,7 +277,7 @@ Add to `.cursor/mcp.json`:
   "mcpServers": {
     "protheus-research": {
       "command": "node",
-      "args": ["/home/limaduzz/protheus-research/dist/index.js"]
+      "args": ["/path/to/protheus-research/dist/index.js"]
     }
   }
 }
@@ -279,7 +291,7 @@ Add to `~/.gemini/config/mcp_config.json`:
   "mcpServers": {
     "protheus-research": {
       "command": "node",
-      "args": ["/home/limaduzz/protheus-research/dist/index.js"],
+      "args": ["/path/to/protheus-research/dist/index.js"],
       "env": {}
     }
   }

@@ -4,6 +4,9 @@
   "description": "MCP server for advanced TOTVS Protheus technical research",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "protheus-research": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
