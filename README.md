@@ -300,24 +300,14 @@ Add to `~/.gemini/config/mcp_config.json`:
 
 ---
 
-## Build & Test
+## Execução Local (Opcional)
 
 ```bash
-# Clone the repository
+# Clone e build local do MCP
 git clone https://github.com/limaduzz11/protheus-research.git
 cd protheus-research
-
-# Install dependencies
 npm install
-
-# Compile TypeScript
 npm run build
-
-# Execute automated test suite
-node test_full.js
-
-# Launch the server directly over stdio
-node dist/index.js
 ```
 
 ---
