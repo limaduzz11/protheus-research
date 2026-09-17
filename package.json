@@ -1,20 +1,26 @@
 {
   "name": "protheus-research",
   "version": "1.0.0",
-  "description": "MCP server for advanced TOTVS Protheus technical research",
+  "description": "Private Model Context Protocol (MCP) server for TOTVS Protheus technical research and AI diagnostic assistance",
+  "private": true,
   "type": "module",
   "main": "dist/index.js",
-  "bin": {
-    "protheus-research": "dist/index.js"
-  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
-  "keywords": ["mcp", "protheus", "totvs", "advpl", "tlpp"],
-  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "protheus",
+    "totvs",
+    "advpl",
+    "tlpp",
+    "enterprise-ai"
+  ],
+  "license": "UNLICENSED",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
     "undici": "^7.6.0",

@@ -1,31 +1,66 @@
 # Protheus Research MCP Server
 
+<div align="center">
+
+**Private Model Context Protocol (MCP) Server for TOTVS Protheus Enterprise Architecture & Diagnostics**
+
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-SDK%201.x-blueviolet?style=flat)](https://modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status](https://img.shields.io/badge/Status-Private_Enterprise_MCP-informational?style=flat)](#system-scope)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat)](#license)
 
-A high-performance **Model Context Protocol (MCP)** server tailored for the **TOTVS Protheus** enterprise ecosystem. It equips AI agents and developer workflows (Claude Desktop, OpenCode, Cursor, Antigravity) with structured real-time search, official documentation lookup across TDN, trusted community insights, runtime error heuristics, and modern ADVPL/TL++ code generation.
+<br />
+
+**English** &nbsp;|&nbsp; [Português (Brasil)](README.pt-BR.md)
+
+</div>
+
+> A specialized Model Context Protocol (MCP) middleware engineered to equip AI coding agents with domain-specific intelligence, structured documentation retrieval, stack trace heuristic diagnostics, and canonical ADVPL/TL++ syntax standards across the TOTVS Protheus ecosystem.
 
 ---
 
-## Architecture Overview
+## Table of Contents
 
-The server implements the Model Context Protocol specification over standard I/O (`stdio`), acting as an intelligent bridge between LLM hosts and TOTVS technical documentation hubs.
+- [Concept & Rationale](#concept--rationale)
+- [System Architecture](#system-architecture)
+- [Agent Tool-Call Lifecycle](#agent-tool-call-lifecycle)
+- [Tool Suite Specification](#tool-suite-specification)
+- [Security & Enterprise Isolation](#security--enterprise-isolation)
+- [System Scope](#system-scope)
+- [Legal Disclaimer](#legal-disclaimer)
+- [License](#license)
+
+---
+
+## Concept & Rationale
+
+Software engineering within the **TOTVS Protheus ERP** environment presents distinct domain challenges:
+- Proprietary language syntaxes (**ADVPL**, **TL++**) that standard, general-purpose LLMs frequently misinterpret or hallucinate.
+- Extensive, disparate documentation repositories across TDN (TOTVS Developer Network), technical issue bulletins, and release notes.
+- Complex AppServer runtime execution behaviors, including memory management quirks, database cursors (`GetNextAlias`, `ChangeQuery`), and runtime stack traces (Access Violations, Array Bounds, lock contention).
+
+The **Protheus Research MCP Server** operates as a structured semantic bridge. Conforming strictly to the **Model Context Protocol (MCP)** specification, it exposes clean, deterministic tools that AI agent platforms (such as Claude, Cursor, OpenCode, and Antigravity) invoke dynamically to ground their code suggestions and architectural diagnostics in authoritative technical facts.
+
+---
+
+## System Architecture
+
+The server runs as a state-isolated daemon communicating via the standard JSON-RPC 2.0 protocol over standard input/output (`stdio`):
 
 ```mermaid
 graph TD
-    subgraph AI Client Host
-        LLM[AI Agent / LLM Host<br/>Claude / OpenCode / Cursor]
+    subgraph AI Host Environment
+        Agent[AI Agent / LLM Host<br/>Claude / Cursor / OpenCode / Antigravity]
         ClientTransport[MCP Client Transport]
     end
 
-    subgraph Protheus Research MCP Server
+    subgraph Protheus Research MCP Engine
         StdioTransport[StdioServerTransport<br/>JSON-RPC 2.0]
         Router[Tool Execution Router]
-        Cache[In-Memory TTL Cache<br/>600s TTL]
+        Cache[In-Memory TTL Cache<br/>600s TTL / Deduplication]
         
-        subgraph Toolset
+        subgraph Toolset [Registered Capabilities]
             T1[search_protheus_docs]
             T2[search_community]
             T3[search_release_notes]
@@ -36,16 +71,16 @@ graph TD
         end
 
         Ranker[Source Ranker & Normalizer]
-        Heuristic[Error Categorization Engine]
+        Heuristic[Error Categorization Matrix]
     end
 
-    subgraph External Sources
-        TDN[(TOTVS TDN / Central Atendimento)]
-        GH[(GitHub TOTVS Repositories)]
-        COMM[(Community Hubs<br/>Terminal de Info, BlackTDN)]
+    subgraph External Technical Knowledge
+        TDN[(TOTVS TDN / Central de Atendimento)]
+        GH[(Official TOTVS Repositories)]
+        COMM[(Recognized Community Portals)]
     end
 
-    LLM <-->|JSON-RPC Tools| ClientTransport
+    Agent <-->|JSON-RPC Tools| ClientTransport
     ClientTransport <-->|stdio stream| StdioTransport
     StdioTransport --> Router
     Router --> Cache
@@ -55,71 +90,79 @@ graph TD
     Ranker --> TDN & GH & COMM
 ```
 
-### Key Subsystems
+### Core Subsystems
 
-1. **Protocol Core (`src/index.ts`)**: Built on `@modelcontextprotocol/sdk`, exposing standard `ListToolsRequestSchema` and `CallToolRequestSchema` handlers.
-2. **Deterministic Source Ranker (`src/services/searcher.ts`)**: Prioritizes authoritative TOTVS domains (`tdn.totvs.com`, `centraldeatendimento.totvs.com`) with Level 1 reliability, while indexing recognized community technical portals with Level 2 reliability.
-3. **Error Heuristic Engine (`src/tools/debugError.ts`)**: Regex-driven pattern matcher mapping ADVPL stack traces (Access Violations, Array Bounds, Deadlocks, REST/SOAP faults, DBAccess timeouts) to remediation matrices.
-4. **Code Synthesizer (`src/tools/generateExample.ts`)**: Emits strict, production-ready ADVPL, TL++, embedded SQL, and FWRest boilerplate adhering to TOTVS modern development guidelines.
-5. **In-Memory Cache (`src/utils/cache.ts`)**: Fast key-value store preventing upstream rate limits and duplicate outbound roundtrips during multi-step agent reasoning loops.
+1. **Protocol Core (`src/index.ts`):** Implements the official `@modelcontextprotocol/sdk` schemas (`ListToolsRequestSchema`, `CallToolRequestSchema`), handling tool discovery, parameter validation, and structured error responses.
+2. **Deterministic Source Ranker (`src/services/searcher.ts`):** Prioritizes official TOTVS documentation domains (`tdn.totvs.com`, `centraldeatendimento.totvs.com`) as Level 1 authoritative sources, indexing recognized technical community portals as Level 2 advisory references.
+3. **Error Heuristic Engine (`src/tools/debugError.ts`):** Pattern-matching matrix analyzing raw Protheus AppServer error logs, categorizing failure classes (Array Bounds, Access Violations, Deadlocks, REST/SOAP faults, Database timeouts), and returning structured remediation workflows.
+4. **Code Synthesis Engine (`src/tools/generateExample.ts`):** Produces standard-compliant ADVPL, TL++, and Embedded SQL patterns adhering strictly to modern Protheus guidelines (`Local` variable scoping, logical deletion handling, and cross-RDBMS query wrappers).
+5. **In-Memory Cache (`src/utils/cache.ts`):** Fast, key-value TTL store preventing outbound duplicate requests and upstream rate-limiting during recursive multi-step reasoning runs.
 
 ---
 
-## MCP Agent Tool-Call Lifecycle
+## Agent Tool-Call Lifecycle
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User
-    participant Agent as AI Host (Cursor / Claude / OpenCode)
+    actor Engineer as Software Engineer
+    participant Agent as AI Agent (Claude / Cursor / Antigravity)
     participant MCP as Protheus Research MCP Server
     participant Cache as In-Memory Cache
-    participant Engine as Search & Parser Engine
-    participant Sources as TDN / Community Web
+    participant Engine as Search & Parser Pipeline
+    participant Sources as TDN & Knowledge Portals
 
-    User->>Agent: "Investigate error: variable does not exist M->A1_COD in REST routine"
+    Engineer->>Agent: "Diagnose AppServer error: array out of bounds in U_MYFUNC"
     Agent->>MCP: CallToolRequest("debug_protheus_error", { errorMessage: "...", stackTrace: "..." })
     
-    MCP->>Cache: Check cached diagnosis key
+    MCP->>Cache: Check cached diagnostic fingerprint
     alt Cache Hit
         Cache-->>MCP: Return cached diagnosis
     else Cache Miss
-        MCP->>MCP: Run heuristic pattern categorization
-        MCP->>Engine: Dispatch parallel domain-scoped search queries
-        Engine->>Sources: Query TDN + Community articles
-        Sources-->>Engine: Raw search snippets & metadata
-        Engine->>MCP: Ranked & normalized sources (relevance score)
-        MCP->>Cache: Store result with 10-minute TTL
+        MCP->>MCP: Execute heuristic error classification
+        MCP->>Engine: Dispatch targeted documentation search
+        Engine->>Sources: Query TDN articles & known issues
+        Sources-->>Engine: Raw documentation snippets & URLs
+        Engine->>MCP: Normalized, relevance-scored references
+        MCP->>Cache: Store result (10-minute TTL)
     end
 
-    MCP-->>Agent: CallToolResult(JSON diagnostic payload with causes, fixes, docs)
-    Agent-->>User: Synthesizes technical analysis with exact code remedies
+    MCP-->>Agent: CallToolResult(Structured diagnosis, root causes, corrective code)
+    Agent-->>Engineer: Synthesizes precise root cause and validated ADVPL patch
 ```
 
 ---
 
-## Detailed Tool Reference
+## Tool Suite Specification
 
-### 1. `search_protheus_docs`
-Searches authoritative TOTVS portals including TDN, Central de Atendimento, and official GitHub repositories.
+| Tool Identifier | Scope | Technical Function |
+| :--- | :---: | :--- |
+| **`search_protheus_docs`** | Official Docs | Queries TDN, Central de Atendimento, and official TOTVS frameworks with optional module and version scoping. |
+| **`debug_protheus_error`** | Diagnostics | Heuristic pattern analysis classifying runtime crashes, stack traces, and AppServer dumps with remediation steps. |
+| **`generate_advpl_example`** | Code Synthesis | Generates production-ready, canonical ADVPL, TL++, Embedded SQL, and FWRest boilerplate adhering to TOTVS modern guidelines. |
+| **`deep_research`** | Correlation | Orchestrates autonomous multi-tier research cross-referencing documentation, release notes, and community solutions. |
+| **`compare_sources`** | Comparison | Cross-verifies competing implementation approaches or legacy vs. modern framework methods. |
+| **`search_community`** | Community Hubs | Queries curated developer portals and forums for field-tested workarounds and niche customizations. |
+| **`search_release_notes`** | Lifecycle | Checks issue resolutions, cumulative update packages, and framework changes across Protheus releases. |
 
-#### Input Schema
+### Tool Schemas & Payloads
+
+#### 1. `search_protheus_docs`
 ```json
+// Input Schema
 {
   "query": "FWRest",
   "module": "SIGAFAT",
-  "version": "12.1.33"
+  "version": "12.1.2210"
 }
-```
 
-#### Output Payload
-```json
+// Sample Output Payload
 {
   "results": [
     {
       "title": "FWRest - Framework ADVPL - TDN",
       "url": "https://tdn.totvs.com/display/tec/FWRest",
-      "snippet": "Classe para consumo de serviços RESTful em ADVPL, suportando métodos GET, POST, PUT, DELETE, gerenciamento de cabeçalhos e SSL.",
+      "snippet": "Classe para consumo de serviços RESTful em ADVPL, suportando métodos HTTP padronizados, SSL e manipulação de cabeçalhos.",
       "sourceType": "official_tdn",
       "sourceLevel": 1,
       "relevance": 95
@@ -129,195 +172,82 @@ Searches authoritative TOTVS portals including TDN, Central de Atendimento, and 
 }
 ```
 
----
-
-### 2. `debug_protheus_error`
-Heuristic engine analyzing Protheus runtime crashes, stack traces, and AppServer errors.
-
-#### Input Schema
+#### 2. `debug_protheus_error`
 ```json
+// Input Schema
 {
   "errorMessage": "array out of bounds [0] of [1] on U_MYFUNC(MYFUNC.PRW)",
-  "stackTrace": "U_MYFUNC (MYFUNC.PRW) 15/08/2026 14:22:01\nU_RESTEXEC (RESTEXEC.PRW) 15/08/2026 14:20:10",
+  "stackTrace": "U_MYFUNC (MYFUNC.PRW) 15/08/2026 14:22:01",
   "environment": "Protheus 12.1.2210, SQL Server 2019"
 }
-```
 
-#### Output Payload
-```json
+// Sample Output Payload
 {
-  "diagnosis": "**Categoria**: Array Bounds\n\nErro classificado como: **Array Bounds**. Foram encontradas 6 fontes relevantes para investigação.",
+  "diagnosis": "Category: Array Bounds. 6 authoritative references located.",
   "probableCauses": [
-    "- Tentativa de acesso a índice <= 0 ou superior ao comprimento do array (`Len(aVetor)`).",
-    "- Retorno vazio em função de busca (`DbSeek` ou query) sem validação antes de acessar o array de resultados."
+    "Attempting to read index <= 0 or beyond array length (Len(aArray)).",
+    "Empty dataset returned by query/DbSeek without length validation prior to indexing."
   ],
   "verificationSteps": [
-    "1. Verificar logs do AppServer (appserver_*.log)",
-    "2. Verificar logs do SmartClient na estação",
-    "3. Verificar se o RPO está atualizado e compilado",
-    "4. Verificar versão do Framework e LIBs",
-    "5. Testar em ambiente de homologação"
+    "Inspect AppServer console log for full execution context.",
+    "Verify RPO compilation status and dictionary synchronization."
   ],
   "fixes": [
-    "- Proteger a leitura com `If Len(aDados) >= nPos` antes de indexar `aDados[nPos]`.",
-    "- Inicializar vetores dinâmicos com `aClone()` ou `AAdd()` defensivo."
-  ],
-  "preventiveMeasures": [
-    "- Implementar tratamento de erros com bloco BEGIN SEQUENCE / END SEQUENCE",
-    "- Realizar testes em homologação antes de promover a produção"
-  ],
-  "officialSources": [
-    {
-      "title": "Tratamento de Exceções e Erros em ADVPL - TDN",
-      "url": "https://tdn.totvs.com/display/tec/Tratamento+de+Erros",
-      "sourceLevel": 1
-    }
+    "Enforce defensive boundary checks using If Len(aData) >= nIndex before accessing aData[nIndex].",
+    "Initialize dynamic collections safely using AAdd() or aClone()."
   ]
 }
 ```
 
----
-
-### 3. `generate_advpl_example`
-Generates modern, standard-compliant ADVPL, TL++, SQL Server queries, or FWRest endpoint structures.
-
-#### Input Schema
+#### 3. `generate_advpl_example`
 ```json
+// Input Schema
 {
   "language": "advpl",
-  "description": "Read customers from table SA1 with query filtering and JSON serialization",
-  "context": "Módulo Faturamento (SIGAFAT)"
+  "description": "Query customers from SA1 with logic deletion handling and JSON serialization",
+  "context": "Faturamento (SIGAFAT)"
 }
-```
 
-#### Output Payload
-```json
+// Sample Output Payload
 {
   "language": "advpl",
-  "description": "Read customers from table SA1 with query filtering and JSON serialization",
-  "code": "#Include \"Protheus.ch\"\n#Include \"TopConn.ch\"\n\n/*/\n  Funcao: U_ReadCust\n  Descricao: Consulta customizada de clientes (SA1)\n/*/\nUser Function ReadCust(cEstado)\n    Local cQuery    := \"\"\n    Local cAlias    := GetNextAlias()\n    Local oResponse := JsonObject():New()\n    Local aClientes := {}\n\n    Default cEstado := \"SP\"\n\n    cQuery := \"SELECT A1_COD, A1_NOME, A1_MUN FROM \" + RetSqlName(\"SA1\") + \" \"\n    cQuery += \"WHERE A1_FILIAL = '\" + xFilial(\"SA1\") + \"' \"\n    cQuery += \"  AND A1_EST = '\" + cEstado + \"' \"\n    cQuery += \"  AND D_E_L_E_T_ = ' ' \"\n    cQuery := ChangeQuery(cQuery)\n\n    TCQuery cQuery New Alias (cAlias)\n\n    While !(cAlias)->(Eof())\n        AAdd(aClientes, {\"codigo\": AllTrim((cAlias)->A1_COD), \"nome\": AllTrim((cAlias)->A1_NOME)})\n        (cAlias)->(DbSkip())\n    EndDo\n    (cAlias)->(DbCloseArea())\n\n    oResponse['total'] := Len(aClientes)\n    oResponse['data']  := aClientes\nReturn oResponse:ToJson()\n",
   "bestPractices": [
-    "Uso obrigatório de LOCAL para tipagem e escopo seguro.",
-    "Uso de GetNextAlias() para isolar cursores temporários.",
-    "Filtragem por filial (xFilial) e verificação de deleção lógica (D_E_L_E_T_).",
-    "Uso de ChangeQuery() para compatibilidade multiplataforma de banco de dados."
+    "Enforce explicit Local variable declarations for predictable memory scope.",
+    "Use GetNextAlias() to avoid cursor collisions in concurrent threads.",
+    "Apply ChangeQuery() for cross-database portability.",
+    "Always verify logical deletion flag (D_E_L_E_T_)."
   ]
 }
 ```
 
 ---
 
-### 4. `deep_research`
-Orchestrates autonomous multi-step research across official docs, community portals, release notes, and known issue registries.
+## Security & Enterprise Isolation
 
-#### Input Schema
-```json
-{
-  "query": "Migração de FWRest para TLPP REST Services",
-  "depth": "deep",
-  "modules": ["FRAMEWORK", "TECNOLOGIA"],
-  "versions": ["12.1.33", "12.1.2210"]
-}
-```
+- **Air-Gapped Operation:** The server operates strictly as an analytical knowledge middleware. It does not establish direct connections to customer production ERP databases, DBAccess ports, or live transactional tables.
+- **Zero Sensitive Data Ingestion:** The engine does not store, transmit, or process client business records, ERP credentials, or proprietary business logic.
+- **Controlled Outbound Communication:** Web requests are strictly confined to public documentation hosts (TDN, Central de Atendimento, GitHub) over standard TLS/HTTPS.
 
 ---
 
-## Client Wiring Guide
+## System Scope
 
-Configure the MCP server in your local developer environments:
-
-### 1. Claude Desktop
-Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`, Linux: `~/.config/Claude/claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "protheus-research": {
-      "command": "node",
-      "args": ["/path/to/protheus-research/dist/index.js"]
-    }
-  }
-}
-```
-
-Or run directly with npx / global install:
-```json
-{
-  "mcpServers": {
-    "protheus-research": {
-      "command": "npx",
-      "args": ["-y", "protheus-research"]
-    }
-  }
-}
-```
-
-### 2. OpenCode
-Add to your project's `opencode.jsonc` or global configuration:
-
-```jsonc
-{
-  "mcp": {
-    "servers": {
-      "protheus-research": {
-        "command": "node",
-        "args": ["/path/to/protheus-research/dist/index.js"],
-        "enabled": true
-      }
-    }
-  }
-}
-```
-
-### 3. Cursor
-Add to `.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "protheus-research": {
-      "command": "node",
-      "args": ["/path/to/protheus-research/dist/index.js"]
-    }
-  }
-}
-```
-
-### 4. Antigravity / Gemini CLI
-Add to `~/.gemini/config/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "protheus-research": {
-      "command": "node",
-      "args": ["/path/to/protheus-research/dist/index.js"],
-      "env": {}
-    }
-  }
-}
-```
+This repository documents the architectural blueprint, design patterns, and capability contracts of the **Protheus Research MCP Server**. As a private enterprise asset tailored to specialized development environments, public distribution packages, automated build artifacts, and client environment configurations are maintained outside public repositories.
 
 ---
 
-## Execução Local (Opcional)
+## Legal Disclaimer
 
-```bash
-# Clone e build local do MCP
-git clone https://github.com/limaduzz11/protheus-research.git
-cd protheus-research
-npm install
-npm run build
-```
-
----
-
-## Legal & Educational Disclaimer
-
-TOTVS, Protheus, ADVPL, and TL++ are registered trademarks of **TOTVS S.A.** This project is an independent developer productivity tool built for technical research and software engineering workflow enhancement. It is neither affiliated with, sponsored by, nor endorsed by TOTVS S.A. No confidential or proprietary client assets are contained within this software.
+TOTVS, Protheus, ADVPL, and TL++ are registered trademarks of **TOTVS S.A.** This project is an independent developer productivity and architectural research middleware. It is neither affiliated with, sponsored by, nor endorsed by TOTVS S.A.
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+All rights reserved. Proprietary software. Refer to [LICENSE](LICENSE) for terms.
+
+---
+
+<div align="center">
+  <sub>Designed & engineered by <b>Eduardo de Lima Paranhos</b></sub>
+</div>
